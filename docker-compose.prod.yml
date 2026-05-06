@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # ============================================
   # Caddy - Reverse proxy with automatic HTTPS
@@ -60,6 +58,9 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -94,6 +95,9 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       NODE_ENV: production
       PROCESS_TYPE: worker
