@@ -44,7 +44,7 @@ async function initializeClient(shop) {
   });
 
   const client = new Client({
-    authStrategy: new LocalAuth({ clientId: shop }),
+    authStrategy: new LocalAuth({ clientId: shop.replace(/[^a-zA-Z0-9_-]/g, "_") }),
     puppeteer: {
       headless: true,
       args: [
