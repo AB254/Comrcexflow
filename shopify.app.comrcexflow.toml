@@ -4,7 +4,7 @@ client_id = "6c7c620214c5d83ebe07b6eb4376c58b"
 name = "ComrcexFlow"
 application_url = "https://shopify.dev/apps/default-app-home"
 embedded = true
-handle = "comrcexflow"
+handle = "comrcexflow-wa"
 
 [build]
 automatically_update_urls_on_dev = true
@@ -17,13 +17,14 @@ api_version = "2026-04"
   topics = ["app/uninstalled"]
   uri = "/webhooks"
 
-  [[webhooks.subscriptions]]
-  topics = ["orders/create", "orders/cancelled", "orders/fulfilled"]
-  uri = "/webhooks"
+  # NOTE: Uncomment these after protected customer data access is approved
+  # [[webhooks.subscriptions]]
+  # topics = ["orders/create", "orders/cancelled", "orders/fulfilled"]
+  # uri = "/webhooks"
 
-  [[webhooks.subscriptions]]
-  topics = ["checkouts/update"]
-  uri = "/webhooks"
+  # [[webhooks.subscriptions]]
+  # topics = ["checkouts/update"]
+  # uri = "/webhooks"
 
   [webhooks.privacy_compliance]
   customer_deletion_url = "/webhooks"
@@ -35,11 +36,6 @@ scopes = "write_products,read_orders,write_orders,read_checkouts,write_checkouts
 
 [auth]
 redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
-
-[app_proxy]
-url = "https://your-app.fly.dev/proxy"
-subpath = "whatsapp"
-prefix = "apps"
 
 [pos]
 embedded = false
