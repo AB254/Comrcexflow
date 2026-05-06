@@ -1,5 +1,7 @@
 import pkg from "whatsapp-web.js";
 const { Client, LocalAuth } = pkg;
+import { existsSync, rmSync } from "fs";
+import { join } from "path";
 import prisma from "../db.server.js";
 
 const clients = new Map();
@@ -22,6 +24,34 @@ function getQRCode(shop) {
   return qrCodes.get(shop) || null;
 }
 
+function getSanitizedId(shop) {
+  return shop.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function clearSessionFiles(shop) {
+  const clientId = getSanitizedId(shop);
+  const sessionDir = join(process.cwd(), ".wwebjs_auth", `session-${clientId}`);
+  if (existsSync(sessionDir)) {
+    try {
+      rmSync(sessionDir, { recursive: true, force: true });
+      console.log(`[WhatsApp] Cleared session files for ${shop}`);
+    } catch (err) {
+      console.error(`[WhatsApp] Error clearing session files:`, err);
+    }
+  }
+}
+
+async function cleanupClient(shop) {
+  const existing = clients.get(shop);
+  if (existing) {
+    try {
+      await existing.destroy();
+    } catch {}
+    clients.delete(shop);
+  }
+  qrCodes.delete(shop);
+}
+
 async function initializeClient(shop) {
   if (clients.has(shop)) {
     const existing = clients.get(shop);
@@ -30,21 +60,22 @@ async function initializeClient(shop) {
       clientStates.set(shop, STATES.CONNECTED);
       return { status: STATES.CONNECTED };
     }
-    try {
-      await existing.destroy();
-    } catch {}
-    clients.delete(shop);
+    await cleanupClient(shop);
   }
+
+  clearSessionFiles(shop);
 
   clientStates.set(shop, STATES.AUTHENTICATING);
   qrCodes.delete(shop);
 
-  const savedSession = await prisma.whatsAppSession.findUnique({
+  await prisma.whatsAppSession.upsert({
     where: { shop },
+    update: { isConnected: false },
+    create: { shop, isConnected: false },
   });
 
   const client = new Client({
-    authStrategy: new LocalAuth({ clientId: shop.replace(/[^a-zA-Z0-9_-]/g, "_") }),
+    authStrategy: new LocalAuth({ clientId: getSanitizedId(shop) }),
     puppeteer: {
       headless: true,
       args: [
@@ -98,9 +129,10 @@ async function initializeClient(shop) {
   });
 
   client.on("auth_failure", async (msg) => {
-    clientStates.set(shop, STATES.FAILED);
-    qrCodes.delete(shop);
     console.error(`[WhatsApp] Auth failure for ${shop}:`, msg);
+    await cleanupClient(shop);
+    clearSessionFiles(shop);
+    clientStates.set(shop, STATES.DISCONNECTED);
 
     await prisma.whatsAppSession.upsert({
       where: { shop },
@@ -110,10 +142,10 @@ async function initializeClient(shop) {
   });
 
   client.on("disconnected", async (reason) => {
-    clientStates.set(shop, STATES.DISCONNECTED);
-    qrCodes.delete(shop);
-    clients.delete(shop);
     console.log(`[WhatsApp] Disconnected for ${shop}:`, reason);
+    await cleanupClient(shop);
+    clearSessionFiles(shop);
+    clientStates.set(shop, STATES.DISCONNECTED);
 
     await prisma.whatsAppSession.upsert({
       where: { shop },
@@ -124,27 +156,20 @@ async function initializeClient(shop) {
 
   clients.set(shop, client);
 
-  client.initialize().catch((err) => {
-    clientStates.set(shop, STATES.FAILED);
-    clients.delete(shop);
+  client.initialize().catch(async (err) => {
     console.error(`[WhatsApp] Init error for ${shop}:`, err);
+    clients.delete(shop);
+    clearSessionFiles(shop);
+    clientStates.set(shop, STATES.DISCONNECTED);
   });
 
   return { status: getClientState(shop) };
 }
 
 async function disconnectClient(shop) {
-  const client = clients.get(shop);
-  if (client) {
-    try {
-      await client.logout();
-      await client.destroy();
-    } catch {}
-    clients.delete(shop);
-  }
-
+  await cleanupClient(shop);
+  clearSessionFiles(shop);
   clientStates.set(shop, STATES.DISCONNECTED);
-  qrCodes.delete(shop);
 
   await prisma.whatsAppSession.upsert({
     where: { shop },
