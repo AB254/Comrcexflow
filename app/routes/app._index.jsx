@@ -7,9 +7,9 @@ import {
   BlockStack,
   Text,
   InlineGrid,
-  Box,
   Banner,
   Button,
+  Box,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
@@ -101,103 +101,85 @@ export default function Index() {
           </Banner>
         )}
 
-        <Layout>
-          <Layout.Section variant="oneThird">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingSm">Current Plan</Text>
-                <Text as="p" variant="headingLg" fontWeight="bold">
-                  {data.isBypassed ? "Unlimited (Bypassed)" : data.plan.charAt(0).toUpperCase() + data.plan.slice(1)}
-                </Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+        <InlineGrid columns={3} gap="400">
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h2" variant="headingSm">Current Plan</Text>
+              <Text as="p" variant="headingLg" fontWeight="bold">
+                {data.isBypassed ? "Unlimited" : data.plan.charAt(0).toUpperCase() + data.plan.slice(1)}
+              </Text>
+            </BlockStack>
+          </Card>
 
-          <Layout.Section variant="oneThird">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingSm">Monthly Usage</Text>
-                <Text as="p" variant="headingLg" fontWeight="bold">
-                  {data.monthlyUsage} / {data.monthlyLimit}
-                </Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h2" variant="headingSm">Monthly Usage</Text>
+              <Text as="p" variant="headingLg" fontWeight="bold">
+                {data.monthlyUsage} / {data.monthlyLimit}
+              </Text>
+            </BlockStack>
+          </Card>
 
-          <Layout.Section variant="oneThird">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingSm">WhatsApp Status</Text>
-                <Text as="p" variant="headingLg" fontWeight="bold" tone={data.isWhatsAppConnected ? "success" : "critical"}>
-                  {data.isWhatsAppConnected ? `Connected (${data.phoneNumber})` : "Disconnected"}
-                </Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h2" variant="headingSm">WhatsApp Status</Text>
+              <Text as="p" variant="headingLg" fontWeight="bold" tone={data.isWhatsAppConnected ? "success" : "critical"}>
+                {data.isWhatsAppConnected ? "Connected" : "Disconnected"}
+              </Text>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
 
-        <Text as="h2" variant="headingMd">This Month&apos;s Analytics</Text>
-        <Layout>
-          <Layout.Section variant="oneQuarter">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h3" variant="headingSm">Messages Sent</Text>
-                <Text as="p" variant="headingLg">{data.totalSent}</Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+        <Text as="h2" variant="headingMd">This Month</Text>
+        <InlineGrid columns={4} gap="400">
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingSm">Messages Sent</Text>
+              <Text as="p" variant="headingLg">{data.totalSent}</Text>
+            </BlockStack>
+          </Card>
 
-          <Layout.Section variant="oneQuarter">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h3" variant="headingSm">Failed</Text>
-                <Text as="p" variant="headingLg" tone="critical">{data.totalFailed}</Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingSm">Failed</Text>
+              <Text as="p" variant="headingLg" tone="critical">{data.totalFailed}</Text>
+            </BlockStack>
+          </Card>
 
-          <Layout.Section variant="oneQuarter">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h3" variant="headingSm">In Queue</Text>
-                <Text as="p" variant="headingLg">{data.totalQueued}</Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingSm">In Queue</Text>
+              <Text as="p" variant="headingLg">{data.totalQueued}</Text>
+            </BlockStack>
+          </Card>
 
-          <Layout.Section variant="oneQuarter">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="h3" variant="headingSm">Carts Recovered</Text>
-                <Text as="p" variant="headingLg" tone="success">{data.abandonedRecovered}</Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
+          <Card>
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingSm">Carts Recovered</Text>
+              <Text as="p" variant="headingLg" tone="success">{data.abandonedRecovered}</Text>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
 
-        <Layout>
-          <Layout.Section variant="oneHalf">
-            <Card>
-              <BlockStack gap="300">
-                <Text as="h2" variant="headingMd">Quick Actions</Text>
-                <InlineGrid columns={2} gap="300">
-                  <Button url="/app/whatsapp" variant="primary">
-                    WhatsApp Settings
-                  </Button>
-                  <Button url="/app/templates">
-                    Message Templates
-                  </Button>
-                  <Button url="/app/billing">
-                    Manage Billing
-                  </Button>
-                  <Button url="/app/analytics">
-                    View Analytics
-                  </Button>
-                </InlineGrid>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
+        <Card>
+          <BlockStack gap="300">
+            <Text as="h2" variant="headingMd">Quick Actions</Text>
+            <InlineGrid columns={4} gap="300">
+              <Button url="/app/whatsapp" variant="primary">
+                WhatsApp Settings
+              </Button>
+              <Button url="/app/templates">
+                Message Templates
+              </Button>
+              <Button url="/app/billing">
+                Manage Billing
+              </Button>
+              <Button url="/app/analytics">
+                View Analytics
+              </Button>
+            </InlineGrid>
+          </BlockStack>
+        </Card>
       </BlockStack>
     </Page>
   );
