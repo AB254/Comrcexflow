@@ -124,14 +124,11 @@ async function initializeClient(shop) {
 
   clients.set(shop, client);
 
-  try {
-    await client.initialize();
-  } catch (err) {
+  client.initialize().catch((err) => {
     clientStates.set(shop, STATES.FAILED);
     clients.delete(shop);
     console.error(`[WhatsApp] Init error for ${shop}:`, err);
-    throw err;
-  }
+  });
 
   return { status: getClientState(shop) };
 }
