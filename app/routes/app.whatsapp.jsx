@@ -105,6 +105,12 @@ export default function WhatsAppSettings() {
     });
   }, [connectFetcher]);
 
+  useEffect(() => {
+    if (connectionStatus === "disconnected" && connectFetcher.state === "idle") {
+      handleConnect();
+    }
+  }, []);
+
   const handleDisconnect = useCallback(() => {
     disconnectFetcher.submit(null, {
       method: "POST",
