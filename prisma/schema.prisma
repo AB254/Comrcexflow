@@ -22,6 +22,9 @@ model Session {
   accountOwner  Boolean   @default(false)
   locale        String?
   collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken  String?
+  refreshTokenExpires DateTime?
 
   @@index([shop])
 }
