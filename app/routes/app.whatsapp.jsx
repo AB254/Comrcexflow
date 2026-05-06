@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
@@ -43,22 +43,35 @@ export default function WhatsAppSettings() {
   const connectFetcher = useFetcher();
   const disconnectFetcher = useFetcher();
   const statusFetcher = useFetcher();
+  const autoConnectDone = useRef(false);
 
   const [connectionStatus, setConnectionStatus] = useState(initialData.status);
   const [qrDataUrl, setQrDataUrl] = useState(initialData.qrDataUrl);
   const [phoneNumber, setPhoneNumber] = useState(initialData.phoneNumber);
-  const [polling, setPolling] = useState(
-    initialData.status === "authenticating" || initialData.status === "qr_pending"
-  );
-
-  const isConnecting =
-    connectFetcher.state === "submitting" ||
-    connectionStatus === "authenticating" ||
-    connectionStatus === "qr_pending";
+  const [polling, setPolling] = useState(false);
 
   const isConnected = connectionStatus === "connected";
   const isDisconnecting = disconnectFetcher.state === "submitting";
 
+  // Auto-connect on page load if disconnected
+  useEffect(() => {
+    if (!autoConnectDone.current && connectionStatus === "disconnected" && connectFetcher.state === "idle") {
+      autoConnectDone.current = true;
+      connectFetcher.submit(null, {
+        method: "POST",
+        action: "/api/whatsapp/connect",
+      });
+    }
+  }, [connectionStatus, connectFetcher.state]);
+
+  // Start polling after connect request
+  useEffect(() => {
+    if (connectFetcher.data?.success) {
+      setPolling(true);
+    }
+  }, [connectFetcher.data]);
+
+  // Update state from status poll
   useEffect(() => {
     if (statusFetcher.data) {
       setConnectionStatus(statusFetcher.data.status);
@@ -69,47 +82,67 @@ export default function WhatsAppSettings() {
     }
   }, [statusFetcher.data]);
 
-  useEffect(() => {
-    if (connectFetcher.data?.success) {
-      setPolling(true);
-    }
-  }, [connectFetcher.data]);
-
+  // Handle disconnect response
   useEffect(() => {
     if (disconnectFetcher.data?.success) {
       setConnectionStatus("disconnected");
       setQrDataUrl(null);
       setPhoneNumber(null);
       setPolling(false);
+      autoConnectDone.current = false;
     }
   }, [disconnectFetcher.data]);
 
+  // Poll for status updates
   useEffect(() => {
     if (!polling) return;
-    if (connectionStatus === "connected" || connectionStatus === "failed") {
-      setPolling(false);
+    if (connectionStatus === "connected" || connectionStatus === "failed" || connectionStatus === "disconnected") {
+      if (connectionStatus === "connected") {
+        setPolling(false);
+      }
       return;
     }
 
     const interval = setInterval(() => {
-      statusFetcher.load("/api/whatsapp/status");
+      if (statusFetcher.state === "idle") {
+        statusFetcher.load("/api/whatsapp/status");
+      }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [polling, connectionStatus]);
+  }, [polling, connectionStatus, statusFetcher.state]);
+
+  // Also poll when connected to detect remote logout
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const interval = setInterval(() => {
+      if (statusFetcher.state === "idle") {
+        statusFetcher.load("/api/whatsapp/status");
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isConnected, statusFetcher.state]);
+
+  // Auto-reconnect if status changes to disconnected (remote logout)
+  useEffect(() => {
+    if (connectionStatus === "disconnected" && !autoConnectDone.current && connectFetcher.state === "idle") {
+      autoConnectDone.current = true;
+      connectFetcher.submit(null, {
+        method: "POST",
+        action: "/api/whatsapp/connect",
+      });
+    }
+  }, [connectionStatus]);
 
   const handleConnect = useCallback(() => {
+    autoConnectDone.current = true;
     connectFetcher.submit(null, {
       method: "POST",
       action: "/api/whatsapp/connect",
     });
   }, [connectFetcher]);
-
-  useEffect(() => {
-    if (connectionStatus === "disconnected" && connectFetcher.state === "idle") {
-      handleConnect();
-    }
-  }, []);
 
   const handleDisconnect = useCallback(() => {
     disconnectFetcher.submit(null, {
@@ -174,20 +207,12 @@ export default function WhatsAppSettings() {
                   </BlockStack>
                 )}
 
-                {connectionStatus === "disconnected" && (
+                {connectionStatus === "disconnected" && connectFetcher.state === "idle" && (
                   <BlockStack gap="300">
                     <Text as="p" variant="bodyMd" tone="subdued">
-                      Connect your WhatsApp account to start sending automated
-                      messages to your customers. Click the button below to
-                      generate a QR code.
+                      Initializing WhatsApp connection...
                     </Text>
-                    <Button
-                      variant="primary"
-                      onClick={handleConnect}
-                      loading={connectFetcher.state === "submitting"}
-                    >
-                      Generate QR Code
-                    </Button>
+                    <Spinner size="large" />
                   </BlockStack>
                 )}
 
@@ -205,7 +230,8 @@ export default function WhatsAppSettings() {
                 )}
 
                 {(connectionStatus === "qr_pending" ||
-                  connectionStatus === "authenticating") && (
+                  connectionStatus === "authenticating" ||
+                  connectFetcher.state === "submitting") && (
                   <BlockStack gap="400" inlineAlign="center">
                     {qrDataUrl ? (
                       <BlockStack gap="300" inlineAlign="center">
@@ -238,9 +264,7 @@ export default function WhatsAppSettings() {
                       <BlockStack gap="200" inlineAlign="center">
                         <Spinner size="large" />
                         <Text as="p" variant="bodyMd">
-                          {connectionStatus === "authenticating"
-                            ? "Authenticating..."
-                            : "Generating QR code..."}
+                          Generating QR code...
                         </Text>
                       </BlockStack>
                     )}
@@ -259,7 +283,7 @@ export default function WhatsAppSettings() {
                   </Text>
                   <BlockStack gap="200">
                     <Text as="p" variant="bodyMd">
-                      <strong>1.</strong> Click "Generate QR Code"
+                      <strong>1.</strong> QR code generates automatically
                     </Text>
                     <Text as="p" variant="bodyMd">
                       <strong>2.</strong> Open WhatsApp on your phone
