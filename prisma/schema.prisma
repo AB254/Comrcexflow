@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String?
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+
+  @@index([shop])
+}
+
+model StoreSettings {
+  id                  String   @id @default(cuid())
+  shop                String   @unique
+  isActive            Boolean  @default(true)
+
+  // Billing
+  billingPlan         String   @default("free") // free, starter, growth, professional
+  billingSubscriptionId String?
+  monthlyMessageCount Int      @default(0)
+  billingCycleStart   DateTime @default(now())
+
+  // Developer bypass key (hashed)
+  bypassKeyHash       String?
+  isBillingBypassed   Boolean  @default(false)
+
+  // Message templates
+  orderConfirmationTemplate    String  @default("Hi {{customer_name}}! Your order #{{order_number}} has been confirmed. Total: {{total_price}}. Thank you for shopping with us!")
+  abandonedCheckoutTemplate    String  @default("Hi {{customer_name}}, you left some items in your cart! Complete your purchase here: {{checkout_link}}")
+  orderFulfillmentTemplate     String  @default("Great news {{customer_name}}! Your order #{{order_number}} has been shipped. Track it here: {{tracking_url}}")
+  orderCancellationTemplate    String  @default("Hi {{customer_name}}, your order #{{order_number}} has been cancelled. If you have questions, please contact us.")
+
+  // Toggle triggers
+  orderConfirmationEnabled     Boolean @default(true)
+  abandonedCheckoutEnabled     Boolean @default(true)
+  orderFulfillmentEnabled      Boolean @default(true)
+  orderCancellationEnabled     Boolean @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  whatsappSession     WhatsAppSession?
+  messageLogs         MessageLog[]
+}
+
+model WhatsAppSession {
+  id              String   @id @default(cuid())
+  shop            String   @unique
+  sessionData     String?  @db.Text // Serialized whatsapp-web.js session
+  isConnected     Boolean  @default(false)
+  phoneNumber     String?
+  lastConnectedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  storeSettings   StoreSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+}
+
+model MessageLog {
+  id              String   @id @default(cuid())
+  shop            String
+  recipientPhone  String
+  recipientName   String?
+  messageType     String   // order_confirmation, abandoned_checkout, order_fulfillment, order_cancellation
+  messageBody     String   @db.Text
+  status          String   @default("queued") // queued, sent, failed, limit_reached
+  errorMessage    String?
+  orderId         String?
+  checkoutId      String?
+  orderTagApplied Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  storeSettings   StoreSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+
+  @@index([shop])
+  @@index([shop, messageType])
+  @@index([shop, createdAt])
+  @@index([status])
+}
+
+model AnalyticsDaily {
+  id                    String   @id @default(cuid())
+  shop                  String
+  date                  DateTime @db.Date
+  messagesSent          Int      @default(0)
+  messagesFailed        Int      @default(0)
+  abandonedCartsSent    Int      @default(0)
+  abandonedCartsRecovered Int    @default(0)
+
+  createdAt             DateTime @default(now())
+
+  @@unique([shop, date])
+  @@index([shop])
+}

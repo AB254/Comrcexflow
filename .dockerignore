@@ -1,0 +1,17 @@
+node_modules
+build
+.cache
+.git
+.gitignore
+.env
+.env.local
+*.md
+.vscode
+.idea
+.wwebjs_auth
+.wwebjs_cache
+docker-compose*.yml
+Dockerfile
+.dockerignore
+coverage
+*.log

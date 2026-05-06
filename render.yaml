@@ -1,0 +1,84 @@
+# Render Blueprint for ComrcexFlow
+# Deploy via: https://render.com/deploy
+
+services:
+  # Web service (Remix app + WhatsApp clients)
+  - type: web
+    name: comrcexflow-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: PROCESS_TYPE
+        value: web
+      - key: DATABASE_URL
+        fromDatabase:
+          name: comrcexflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: comrcexflow-redis
+          property: connectionString
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: SHOPIFY_APP_URL
+        sync: false
+      - key: HOST
+        sync: false
+      - key: SCOPES
+        value: "write_products,read_orders,write_orders,read_checkouts,write_checkouts,read_customers"
+      - key: MASTER_BYPASS_KEY
+        sync: false
+      - key: INTERNAL_WORKER_SECRET
+        generateValue: true
+    disk:
+      name: whatsapp-sessions
+      mountPath: /app/.wwebjs_auth
+      sizeGB: 1
+    plan: standard
+    healthCheckPath: /
+
+  # Background worker (BullMQ)
+  - type: worker
+    name: comrcexflow-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PROCESS_TYPE
+        value: worker
+      - key: DATABASE_URL
+        fromDatabase:
+          name: comrcexflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: comrcexflow-redis
+          property: connectionString
+      - key: SHOPIFY_APP_URL
+        fromService:
+          type: web
+          name: comrcexflow-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: INTERNAL_WORKER_SECRET
+        sync: false
+      - key: MASTER_BYPASS_KEY
+        sync: false
+    plan: standard
+
+databases:
+  - name: comrcexflow-db
+    plan: starter
+    databaseName: comrcexflow
+    user: comrcexflow
+
+  - name: comrcexflow-redis
+    plan: starter

@@ -1,0 +1,106 @@
+version: "3.8"
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: comrcexflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-comrcexflow_dev}
+      POSTGRES_DB: comrcexflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comrcexflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Redis (BullMQ message queue backend)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Web App (Remix server + WhatsApp clients)
+  # ============================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      PROCESS_TYPE: web
+      DATABASE_URL: postgresql://comrcexflow:${POSTGRES_PASSWORD:-comrcexflow_dev}@postgres:5432/comrcexflow?schema=public
+      REDIS_URL: redis://redis:6379
+      SHOPIFY_API_KEY: ${SHOPIFY_API_KEY}
+      SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET}
+      SHOPIFY_APP_URL: ${SHOPIFY_APP_URL}
+      HOST: ${SHOPIFY_APP_URL}
+      SCOPES: ${SCOPES:-write_products,read_orders,write_orders,read_checkouts,write_checkouts,read_customers}
+      MASTER_BYPASS_KEY: ${MASTER_BYPASS_KEY}
+      INTERNAL_WORKER_SECRET: ${INTERNAL_WORKER_SECRET:-worker-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - whatsapp_sessions:/app/.wwebjs_auth
+      - whatsapp_cache:/app/.wwebjs_cache
+    # Required for Puppeteer
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+
+  # ============================================
+  # BullMQ Worker (processes message queues)
+  # ============================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PROCESS_TYPE: worker
+      DATABASE_URL: postgresql://comrcexflow:${POSTGRES_PASSWORD:-comrcexflow_dev}@postgres:5432/comrcexflow?schema=public
+      REDIS_URL: redis://redis:6379
+      SHOPIFY_APP_URL: http://web:3000
+      INTERNAL_WORKER_SECRET: ${INTERNAL_WORKER_SECRET:-worker-secret-change-me}
+      MASTER_BYPASS_KEY: ${MASTER_BYPASS_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  whatsapp_sessions:
+  whatsapp_cache:

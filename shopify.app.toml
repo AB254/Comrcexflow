@@ -1,0 +1,33 @@
+# Shopify App Configuration
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "YOUR_CLIENT_ID"
+name = "ComrcexFlow"
+handle = "comrcexflow"
+application_url = "https://your-app.fly.dev"
+
+[auth]
+redirect_urls = [
+  "https://your-app.fly.dev/auth/callback",
+  "https://your-app.fly.dev/auth/shopify/callback",
+  "https://your-app.fly.dev/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [webhooks.privacy_compliance]
+  customer_deletion_url = "https://your-app.fly.dev/webhooks/customer-deletion"
+  customer_data_request_url = "https://your-app.fly.dev/webhooks/customer-data-request"
+  shop_deletion_url = "https://your-app.fly.dev/webhooks/shop-deletion"
+
+[app_proxy]
+subpath = "whatsapp"
+prefix = "apps"
+url = "https://your-app.fly.dev/proxy"
+
+[pos]
+embedded = false
+
+[access_scopes]
+scopes = "write_products,read_orders,write_orders,read_checkouts,write_checkouts,read_customers"

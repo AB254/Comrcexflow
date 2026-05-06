@@ -1,0 +1,13 @@
+node_modules/
+build/
+.cache/
+.env
+.env.local
+*.session
+.wwebjs_auth/
+.wwebjs_cache/
+prisma/*.db
+dist/
+coverage/
+.DS_Store
+*.log
