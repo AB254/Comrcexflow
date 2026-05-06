@@ -2,14 +2,16 @@ import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import {
   Page,
-  Layout,
   Card,
   BlockStack,
   Text,
   InlineGrid,
   Banner,
   Button,
+  InlineStack,
   Box,
+  ProgressBar,
+  Divider,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
@@ -62,6 +64,10 @@ export const loader = async ({ request }) => {
     professional: 4250,
   };
 
+  const limit = storeSettings.isBillingBypassed
+    ? 999999
+    : PLAN_LIMITS[storeSettings.billingPlan] || 50;
+
   return json({
     shop,
     plan: storeSettings.billingPlan,
@@ -69,9 +75,8 @@ export const loader = async ({ request }) => {
     isWhatsAppConnected: storeSettings.whatsappSession?.isConnected || false,
     phoneNumber: storeSettings.whatsappSession?.phoneNumber || null,
     monthlyUsage: storeSettings.monthlyMessageCount,
-    monthlyLimit: storeSettings.isBillingBypassed
-      ? "Unlimited"
-      : PLAN_LIMITS[storeSettings.billingPlan] || 50,
+    monthlyLimit: storeSettings.isBillingBypassed ? "Unlimited" : limit,
+    usagePercent: storeSettings.isBillingBypassed ? 0 : Math.min(100, Math.round((storeSettings.monthlyMessageCount / limit) * 100)),
     totalSent,
     totalFailed,
     totalQueued,
@@ -82,104 +87,142 @@ export const loader = async ({ request }) => {
 export default function Index() {
   const data = useLoaderData();
 
+  const usageColor = data.usagePercent > 90 ? "critical" : data.usagePercent > 70 ? "warning" : "success";
+  const progressClass = data.usagePercent > 90 ? "progress-bar-fill--danger" : data.usagePercent > 70 ? "progress-bar-fill--warning" : "";
+
   return (
-    <Page title="ComrcexFlow Dashboard">
+    <Page title="Dashboard">
       <BlockStack gap="500">
         {!data.isWhatsAppConnected && (
-          <Banner
-            title="WhatsApp Not Connected"
-            tone="warning"
-            action={{ content: "Connect WhatsApp", url: "/app/whatsapp" }}
-          >
-            <p>Connect your WhatsApp number to start sending automated messages.</p>
-          </Banner>
+          <div className="animate-fade-in-up">
+            <Banner
+              title="WhatsApp Not Connected"
+              tone="warning"
+              action={{ content: "Connect Now", url: "/app/whatsapp" }}
+            >
+              <p>Connect your WhatsApp to start sending automated messages to customers.</p>
+            </Banner>
+          </div>
         )}
 
         {data.isBypassed && (
-          <Banner title="Lifetime Free Access Active" tone="success">
-            <p>Developer key applied. Unlimited messages, no billing.</p>
-          </Banner>
+          <div className="animate-fade-in-up">
+            <Banner title="Developer Access Active" tone="success">
+              <p>Unlimited messages enabled. No billing required.</p>
+            </Banner>
+          </div>
         )}
 
         <InlineGrid columns={3} gap="400">
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h2" variant="headingSm">Current Plan</Text>
-              <Text as="p" variant="headingLg" fontWeight="bold">
-                {data.isBypassed ? "Unlimited" : data.plan.charAt(0).toUpperCase() + data.plan.slice(1)}
-              </Text>
-            </BlockStack>
-          </Card>
+          <div className="animate-fade-in-up stagger-1 stat-card">
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h2" variant="headingSm" tone="subdued">Current Plan</Text>
+                  <div className={data.isBypassed ? "connected-badge" : ""}>
+                    <Text as="span" variant="bodySm" fontWeight="semibold" tone="success">
+                      {data.isBypassed ? "Unlimited" : "Active"}
+                    </Text>
+                  </div>
+                </InlineStack>
+                <Text as="p" variant="headingXl" fontWeight="bold">
+                  {data.isBypassed ? "Dev Mode" : data.plan.charAt(0).toUpperCase() + data.plan.slice(1)}
+                </Text>
+              </BlockStack>
+            </Card>
+          </div>
 
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h2" variant="headingSm">Monthly Usage</Text>
-              <Text as="p" variant="headingLg" fontWeight="bold">
-                {data.monthlyUsage} / {data.monthlyLimit}
-              </Text>
-            </BlockStack>
-          </Card>
+          <div className="animate-fade-in-up stagger-2 stat-card">
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h2" variant="headingSm" tone="subdued">Monthly Usage</Text>
+                  <Text as="span" variant="bodySm" tone={usageColor}>
+                    {data.usagePercent}%
+                  </Text>
+                </InlineStack>
+                <Text as="p" variant="headingXl" fontWeight="bold">
+                  {data.monthlyUsage} <Text as="span" variant="bodyMd" tone="subdued">/ {data.monthlyLimit}</Text>
+                </Text>
+                <div className="progress-bar-container">
+                  <div
+                    className={`progress-bar-fill ${progressClass}`}
+                    style={{ width: `${data.usagePercent}%` }}
+                  />
+                </div>
+              </BlockStack>
+            </Card>
+          </div>
 
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h2" variant="headingSm">WhatsApp Status</Text>
-              <Text as="p" variant="headingLg" fontWeight="bold" tone={data.isWhatsAppConnected ? "success" : "critical"}>
-                {data.isWhatsAppConnected ? "Connected" : "Disconnected"}
-              </Text>
-            </BlockStack>
-          </Card>
+          <div className="animate-fade-in-up stagger-3 stat-card">
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h2" variant="headingSm" tone="subdued">WhatsApp</Text>
+                  <InlineStack gap="200" blockAlign="center">
+                    <span className={`status-dot ${data.isWhatsAppConnected ? "status-dot--connected" : "status-dot--disconnected"}`} />
+                    <Text as="span" variant="bodySm" tone={data.isWhatsAppConnected ? "success" : "critical"}>
+                      {data.isWhatsAppConnected ? "Connected" : "Offline"}
+                    </Text>
+                  </InlineStack>
+                </InlineStack>
+                <Text as="p" variant="headingXl" fontWeight="bold">
+                  {data.isWhatsAppConnected ? data.phoneNumber || "Active" : "---"}
+                </Text>
+              </BlockStack>
+            </Card>
+          </div>
         </InlineGrid>
 
-        <Text as="h2" variant="headingMd">This Month</Text>
-        <InlineGrid columns={4} gap="400">
+        <div className="animate-fade-in-up stagger-4">
           <Card>
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingSm">Messages Sent</Text>
-              <Text as="p" variant="headingLg">{data.totalSent}</Text>
+            <BlockStack gap="400">
+              <Text as="h2" variant="headingMd">This Month&apos;s Performance</Text>
+              <Divider />
+              <InlineGrid columns={4} gap="400">
+                <BlockStack gap="200">
+                  <Text as="h3" variant="bodySm" tone="subdued">Messages Sent</Text>
+                  <Text as="p" variant="headingXl" fontWeight="bold">{data.totalSent}</Text>
+                </BlockStack>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="bodySm" tone="subdued">Failed</Text>
+                  <Text as="p" variant="headingXl" fontWeight="bold" tone="critical">{data.totalFailed}</Text>
+                </BlockStack>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="bodySm" tone="subdued">In Queue</Text>
+                  <Text as="p" variant="headingXl" fontWeight="bold">{data.totalQueued}</Text>
+                </BlockStack>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="bodySm" tone="subdued">Carts Recovered</Text>
+                  <Text as="p" variant="headingXl" fontWeight="bold" tone="success">{data.abandonedRecovered}</Text>
+                </BlockStack>
+              </InlineGrid>
             </BlockStack>
           </Card>
+        </div>
 
+        <div className="animate-fade-in-up stagger-5">
           <Card>
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingSm">Failed</Text>
-              <Text as="p" variant="headingLg" tone="critical">{data.totalFailed}</Text>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">Quick Actions</Text>
+              <Divider />
+              <InlineGrid columns={4} gap="300">
+                <Button url="/app/whatsapp" variant="primary" size="large">
+                  WhatsApp
+                </Button>
+                <Button url="/app/templates" size="large">
+                  Templates
+                </Button>
+                <Button url="/app/billing" size="large">
+                  Billing
+                </Button>
+                <Button url="/app/analytics" size="large">
+                  Analytics
+                </Button>
+              </InlineGrid>
             </BlockStack>
           </Card>
-
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingSm">In Queue</Text>
-              <Text as="p" variant="headingLg">{data.totalQueued}</Text>
-            </BlockStack>
-          </Card>
-
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingSm">Carts Recovered</Text>
-              <Text as="p" variant="headingLg" tone="success">{data.abandonedRecovered}</Text>
-            </BlockStack>
-          </Card>
-        </InlineGrid>
-
-        <Card>
-          <BlockStack gap="300">
-            <Text as="h2" variant="headingMd">Quick Actions</Text>
-            <InlineGrid columns={4} gap="300">
-              <Button url="/app/whatsapp" variant="primary">
-                WhatsApp Settings
-              </Button>
-              <Button url="/app/templates">
-                Message Templates
-              </Button>
-              <Button url="/app/billing">
-                Manage Billing
-              </Button>
-              <Button url="/app/analytics">
-                View Analytics
-              </Button>
-            </InlineGrid>
-          </BlockStack>
-        </Card>
+        </div>
       </BlockStack>
     </Page>
   );

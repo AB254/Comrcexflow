@@ -174,155 +174,155 @@ export default function WhatsAppSettings() {
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <InlineStack align="space-between" blockAlign="center">
-                  <Text as="h2" variant="headingMd">
-                    Connection Status
-                  </Text>
-                  {getStatusBadge()}
-                </InlineStack>
-
-                <Divider />
-
-                {isConnected && (
-                  <BlockStack gap="300">
-                    <Banner title="WhatsApp Connected" tone="success">
-                      <p>
-                        Your WhatsApp number <strong>{phoneNumber}</strong> is
-                        connected and ready to send automated messages.
-                      </p>
-                    </Banner>
-
-                    <InlineStack gap="300">
-                      <Button
-                        variant="primary"
-                        tone="critical"
-                        onClick={handleDisconnect}
-                        loading={isDisconnecting}
-                      >
-                        Disconnect WhatsApp
-                      </Button>
+            <div className="animate-fade-in-up">
+              <Card>
+                <BlockStack gap="400">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center">
+                      <span className={`status-dot ${isConnected ? "status-dot--connected" : connectionStatus === "qr_pending" || connectionStatus === "authenticating" ? "status-dot--pending" : "status-dot--disconnected"}`} />
+                      <Text as="h2" variant="headingMd">
+                        Connection Status
+                      </Text>
                     </InlineStack>
-                  </BlockStack>
-                )}
+                    {getStatusBadge()}
+                  </InlineStack>
 
-                {connectionStatus === "disconnected" && connectFetcher.state === "idle" && (
-                  <BlockStack gap="300">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Initializing WhatsApp connection...
-                    </Text>
-                    <Spinner size="large" />
-                  </BlockStack>
-                )}
+                  <Divider />
 
-                {connectionStatus === "failed" && (
-                  <BlockStack gap="300">
-                    <Banner title="Connection Failed" tone="critical">
-                      <p>
-                        Failed to connect WhatsApp. Please try again.
-                      </p>
-                    </Banner>
-                    <Button variant="primary" onClick={handleConnect}>
-                      Retry Connection
-                    </Button>
-                  </BlockStack>
-                )}
+                  {isConnected && (
+                    <div className="animate-scale-in">
+                      <BlockStack gap="300">
+                        <Banner title="WhatsApp Connected" tone="success">
+                          <p>
+                            Your WhatsApp number <strong>{phoneNumber}</strong> is
+                            connected and ready to send automated messages.
+                          </p>
+                        </Banner>
+                        <InlineStack gap="300">
+                          <Button
+                            variant="primary"
+                            tone="critical"
+                            onClick={handleDisconnect}
+                            loading={isDisconnecting}
+                          >
+                            Disconnect WhatsApp
+                          </Button>
+                        </InlineStack>
+                      </BlockStack>
+                    </div>
+                  )}
 
-                {(connectionStatus === "qr_pending" ||
-                  connectionStatus === "authenticating" ||
-                  connectFetcher.state === "submitting") && (
-                  <BlockStack gap="400" inlineAlign="center">
-                    {qrDataUrl ? (
+                  {connectionStatus === "disconnected" && connectFetcher.state === "idle" && (
+                    <div className="animate-fade-in">
                       <BlockStack gap="300" inlineAlign="center">
-                        <Text as="p" variant="bodyMd" fontWeight="semibold">
-                          Scan this QR code with your WhatsApp app
-                        </Text>
-                        <Box
-                          padding="400"
-                          background="bg-surface"
-                          borderRadius="200"
-                          borderWidth="025"
-                          borderColor="border"
-                        >
-                          <img
-                            src={qrDataUrl}
-                            alt="WhatsApp QR Code"
-                            style={{
-                              width: 300,
-                              height: 300,
-                              display: "block",
-                            }}
-                          />
-                        </Box>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          Open WhatsApp → Settings → Linked Devices → Link a
-                          Device
-                        </Text>
-                      </BlockStack>
-                    ) : (
-                      <BlockStack gap="200" inlineAlign="center">
                         <Spinner size="large" />
-                        <Text as="p" variant="bodyMd">
-                          Generating QR code...
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                          Initializing WhatsApp connection...
                         </Text>
                       </BlockStack>
-                    )}
-                  </BlockStack>
-                )}
-              </BlockStack>
-            </Card>
+                    </div>
+                  )}
+
+                  {connectionStatus === "failed" && (
+                    <div className="animate-scale-in">
+                      <BlockStack gap="300">
+                        <Banner title="Connection Failed" tone="critical">
+                          <p>Failed to connect WhatsApp. Please try again.</p>
+                        </Banner>
+                        <Button variant="primary" onClick={handleConnect}>
+                          Retry Connection
+                        </Button>
+                      </BlockStack>
+                    </div>
+                  )}
+
+                  {(connectionStatus === "qr_pending" ||
+                    connectionStatus === "authenticating" ||
+                    connectFetcher.state === "submitting") && (
+                    <BlockStack gap="400" inlineAlign="center">
+                      {qrDataUrl ? (
+                        <div className="animate-scale-in">
+                          <BlockStack gap="300" inlineAlign="center">
+                            <Text as="p" variant="bodyMd" fontWeight="semibold">
+                              Scan this QR code with your WhatsApp app
+                            </Text>
+                            <div className="qr-glow">
+                              <Box padding="400" background="bg-surface" borderRadius="300">
+                                <img
+                                  src={qrDataUrl}
+                                  alt="WhatsApp QR Code"
+                                  style={{
+                                    width: 280,
+                                    height: 280,
+                                    display: "block",
+                                  }}
+                                />
+                              </Box>
+                            </div>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                              Open WhatsApp → Settings → Linked Devices → Link a Device
+                            </Text>
+                          </BlockStack>
+                        </div>
+                      ) : (
+                        <div className="animate-fade-in">
+                          <BlockStack gap="200" inlineAlign="center">
+                            <Spinner size="large" />
+                            <Text as="p" variant="bodyMd">
+                              Generating QR code...
+                            </Text>
+                          </BlockStack>
+                        </div>
+                      )}
+                    </BlockStack>
+                  )}
+                </BlockStack>
+              </Card>
+            </div>
           </Layout.Section>
 
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h2" variant="headingMd">
-                    How It Works
-                  </Text>
-                  <BlockStack gap="200">
-                    <Text as="p" variant="bodyMd">
-                      <strong>1.</strong> QR code generates automatically
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      <strong>2.</strong> Open WhatsApp on your phone
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      <strong>3.</strong> Go to Settings → Linked Devices
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      <strong>4.</strong> Tap "Link a Device" and scan the QR
-                      code
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      <strong>5.</strong> Your WhatsApp is now connected!
-                    </Text>
+              <div className="animate-fade-in-up stagger-2">
+                <Card>
+                  <BlockStack gap="300">
+                    <Text as="h2" variant="headingMd">How It Works</Text>
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd"><strong>1.</strong> QR code generates automatically</Text>
+                      <Text as="p" variant="bodyMd"><strong>2.</strong> Open WhatsApp on your phone</Text>
+                      <Text as="p" variant="bodyMd"><strong>3.</strong> Go to Settings → Linked Devices</Text>
+                      <Text as="p" variant="bodyMd"><strong>4.</strong> Tap "Link a Device" and scan</Text>
+                      <Text as="p" variant="bodyMd"><strong>5.</strong> Your WhatsApp is now connected!</Text>
+                    </BlockStack>
                   </BlockStack>
-                </BlockStack>
-              </Card>
+                </Card>
+              </div>
 
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h2" variant="headingMd">
-                    Session Info
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text as="span" tone="subdued">Phone</Text>
-                      <Text as="span">{phoneNumber || "—"}</Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" tone="subdued">Status</Text>
-                      <Text as="span">{connectionStatus}</Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" tone="subdued">Shop</Text>
-                      <Text as="span">{initialData.shop}</Text>
-                    </InlineStack>
+              <div className="animate-fade-in-up stagger-3">
+                <Card>
+                  <BlockStack gap="300">
+                    <Text as="h2" variant="headingMd">Session Info</Text>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <InlineStack align="space-between">
+                        <Text as="span" tone="subdued">Phone</Text>
+                        <Text as="span" fontWeight="semibold">{phoneNumber || "—"}</Text>
+                      </InlineStack>
+                      <InlineStack align="space-between">
+                        <Text as="span" tone="subdued">Status</Text>
+                        <InlineStack gap="100" blockAlign="center">
+                          <span className={`status-dot ${isConnected ? "status-dot--connected" : "status-dot--disconnected"}`} />
+                          <Text as="span" fontWeight="semibold">{connectionStatus}</Text>
+                        </InlineStack>
+                      </InlineStack>
+                      <InlineStack align="space-between">
+                        <Text as="span" tone="subdued">Shop</Text>
+                        <Text as="span" fontWeight="semibold">{initialData.shop}</Text>
+                      </InlineStack>
+                    </BlockStack>
                   </BlockStack>
-                </BlockStack>
-              </Card>
+                </Card>
+              </div>
             </BlockStack>
           </Layout.Section>
         </Layout>
