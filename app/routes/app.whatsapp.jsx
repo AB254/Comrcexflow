@@ -47,7 +47,9 @@ export default function WhatsAppSettings() {
   const [connectionStatus, setConnectionStatus] = useState(initialData.status);
   const [qrDataUrl, setQrDataUrl] = useState(initialData.qrDataUrl);
   const [phoneNumber, setPhoneNumber] = useState(initialData.phoneNumber);
-  const [polling, setPolling] = useState(false);
+  const [polling, setPolling] = useState(
+    initialData.status === "authenticating" || initialData.status === "qr_pending"
+  );
 
   const isConnecting =
     connectFetcher.state === "submitting" ||
