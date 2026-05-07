@@ -15,6 +15,7 @@ import {
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
+import { getCodStats } from "../services/cod.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -64,6 +65,8 @@ export const loader = async ({ request }) => {
     professional: 4250,
   };
 
+  const codStats = await getCodStats(shop);
+
   const limit = storeSettings.isBillingBypassed
     ? 999999
     : PLAN_LIMITS[storeSettings.billingPlan] || 50;
@@ -81,6 +84,8 @@ export const loader = async ({ request }) => {
     totalFailed,
     totalQueued,
     abandonedRecovered,
+    codStats,
+    codEnabled: storeSettings.codConfirmationEnabled,
   });
 };
 
@@ -201,7 +206,40 @@ export default function Index() {
           </Card>
         </div>
 
-        <div className="animate-fade-in-up stagger-5">
+        {data.codEnabled && (
+          <div className="animate-fade-in-up stagger-5">
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">COD Order Confirmation</Text>
+                <Divider />
+                <InlineGrid columns={5} gap="400">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="bodySm" tone="subdued">Pending</Text>
+                    <Text as="p" variant="headingXl" fontWeight="bold">{data.codStats.pending}</Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="bodySm" tone="subdued">Confirmed</Text>
+                    <Text as="p" variant="headingXl" fontWeight="bold" tone="success">{data.codStats.confirmed}</Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="bodySm" tone="subdued">Cancelled</Text>
+                    <Text as="p" variant="headingXl" fontWeight="bold" tone="critical">{data.codStats.cancelled}</Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="bodySm" tone="subdued">Auto-Cancelled</Text>
+                    <Text as="p" variant="headingXl" fontWeight="bold" tone="critical">{data.codStats.autoCancelled}</Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="bodySm" tone="subdued">Confirm Rate</Text>
+                    <Text as="p" variant="headingXl" fontWeight="bold" tone="success">{data.codStats.confirmRate}%</Text>
+                  </BlockStack>
+                </InlineGrid>
+              </BlockStack>
+            </Card>
+          </div>
+        )}
+
+        <div className="animate-fade-in-up stagger-6">
           <Card>
             <BlockStack gap="300">
               <Text as="h2" variant="headingMd">Quick Actions</Text>

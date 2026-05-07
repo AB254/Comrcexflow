@@ -2,40 +2,31 @@
 
 client_id = "6c7c620214c5d83ebe07b6eb4376c58b"
 name = "ComrcexFlow"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://134.209.123.46.sslip.io"
 embedded = true
 handle = "comrcexflow-wa"
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
-api_version = "2026-04"
+api_version = "2026-07"
 
   [[webhooks.subscriptions]]
-  topics = ["app/uninstalled"]
+  topics = [ "app/uninstalled" ]
   uri = "/webhooks"
-
-  # NOTE: Uncomment these after protected customer data access is approved
-  # [[webhooks.subscriptions]]
-  # topics = ["orders/create", "orders/cancelled", "orders/fulfilled"]
-  # uri = "/webhooks"
-
-  # [[webhooks.subscriptions]]
-  # topics = ["checkouts/update"]
-  # uri = "/webhooks"
-
-  [webhooks.privacy_compliance]
-  customer_deletion_url = "/webhooks"
-  customer_data_request_url = "/webhooks"
-  shop_deletion_url = "/webhooks"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
-scopes = "write_products,read_orders,write_orders,read_checkouts,write_checkouts,read_customers"
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_checkouts,read_customers,read_orders,write_checkouts,write_orders,write_products"
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [
+  "https://134.209.123.46.sslip.io/auth/callback",
+  "https://134.209.123.46.sslip.io/auth/shopify/callback",
+  "https://134.209.123.46.sslip.io/api/auth/callback"
+]
 
 [pos]
 embedded = false

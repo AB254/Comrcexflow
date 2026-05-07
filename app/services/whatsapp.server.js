@@ -128,6 +128,19 @@ async function initializeClient(shop) {
     console.log(`[WhatsApp] Ready for ${shop} (${phoneNumber})`);
   });
 
+  client.on("message", async (msg) => {
+    try {
+      const senderPhone = msg.from.replace("@c.us", "");
+      const body = msg.body?.trim();
+      if (!body) return;
+
+      const { handleCodReply } = await import("./cod.server.js");
+      await handleCodReply(shop, senderPhone, body);
+    } catch (err) {
+      console.error(`[WhatsApp] Incoming message error:`, err.message);
+    }
+  });
+
   client.on("auth_failure", async (msg) => {
     console.error(`[WhatsApp] Auth failure for ${shop}:`, msg);
     await cleanupClient(shop);
@@ -248,10 +261,25 @@ async function restoreSession(shop) {
   return false;
 }
 
+async function sendMessageFromShop(shop, phoneNumber, message) {
+  const client = clients.get(shop);
+  if (!client) {
+    throw new Error("WhatsApp client not initialized");
+  }
+  const state = getClientState(shop);
+  if (state !== STATES.CONNECTED) {
+    throw new Error(`WhatsApp not connected (state: ${state})`);
+  }
+  const sanitized = phoneNumber.replace(/[^0-9]/g, "");
+  const chatId = `${sanitized}@c.us`;
+  await client.sendMessage(chatId, message);
+}
+
 export {
   initializeClient,
   disconnectClient,
   sendMessage,
+  sendMessageFromShop,
   getSessionStatus,
   getQRCode,
   getClientState,

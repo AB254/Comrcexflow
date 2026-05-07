@@ -85,6 +85,35 @@ const TEMPLATE_CONFIGS = [
       "shop_name",
     ],
   },
+  {
+    key: "codConfirmation",
+    label: "COD Order Confirmation",
+    description: "Sent to COD customers asking them to reply 1 to confirm or 2 to cancel",
+    templateField: "codConfirmationTemplate",
+    enabledField: "codConfirmationEnabled",
+    variables: [
+      "customer_name",
+      "customer_first_name",
+      "order_number",
+      "total_price",
+      "currency",
+      "items_summary",
+    ],
+  },
+  {
+    key: "codReminder",
+    label: "COD Reminder",
+    description: "Sent 12 hours after COD confirmation if no reply received",
+    templateField: "codReminderTemplate",
+    enabledField: "codConfirmationEnabled",
+    variables: [
+      "customer_name",
+      "customer_first_name",
+      "order_number",
+      "total_price",
+      "currency",
+    ],
+  },
 ];
 
 export const loader = async ({ request }) => {

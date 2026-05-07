@@ -56,6 +56,11 @@ model StoreSettings {
   orderFulfillmentEnabled      Boolean @default(true)
   orderCancellationEnabled     Boolean @default(true)
 
+  // COD Confirmation
+  codConfirmationEnabled       Boolean @default(false)
+  codConfirmationTemplate      String  @default("Hi {{customer_name}}! Your COD order #{{order_number}} for Rs. {{total_price}} needs confirmation.\n\nReply *1* to Confirm\nReply *2* to Cancel")
+  codReminderTemplate          String  @default("Reminder: Your order #{{order_number}} (Rs. {{total_price}}) is still pending. Reply *1* to Confirm or *2* to Cancel.\n\nOrder will be auto-cancelled in 12 hours.")
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -98,6 +103,29 @@ model MessageLog {
   @@index([shop, messageType])
   @@index([shop, createdAt])
   @@index([status])
+}
+
+model CodConfirmation {
+  id              String   @id @default(cuid())
+  shop            String
+  orderId         String
+  orderNumber     String
+  customerPhone   String
+  customerName    String?
+  totalPrice      String?
+  status          String   @default("pending")
+  reminderJobId   String?
+  autoCancelJobId String?
+  messageSentAt   DateTime?
+  reminderSentAt  DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([shop, orderId])
+  @@index([shop])
+  @@index([status])
+  @@index([customerPhone, shop])
 }
 
 model AnalyticsDaily {

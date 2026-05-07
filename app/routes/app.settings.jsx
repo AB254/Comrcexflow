@@ -36,6 +36,7 @@ export const loader = async ({ request }) => {
     isBypassed: storeSettings.isBillingBypassed,
     bypassKeyHash: storeSettings.bypassKeyHash,
     billingPlan: storeSettings.billingPlan,
+    codConfirmationEnabled: storeSettings.codConfirmationEnabled,
     isWhatsAppConnected: false,
   });
 };
@@ -62,6 +63,20 @@ export const action = async ({ request }) => {
     return json({ error: "Invalid developer key. Please check and try again." });
   }
 
+  if (intent === "toggle_cod") {
+    const enabled = formData.get("cod_enabled") === "true";
+    await prisma.storeSettings.update({
+      where: { shop },
+      data: { codConfirmationEnabled: enabled },
+    });
+    return json({
+      success: true,
+      message: enabled
+        ? "COD Order Confirmation enabled. Customers will be asked to confirm COD orders via WhatsApp."
+        : "COD Order Confirmation disabled.",
+    });
+  }
+
   if (intent === "remove_bypass") {
     await removeBypass(shop);
     return json({
@@ -82,6 +97,7 @@ export default function Settings() {
   const [bypassKey, setBypassKey] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [isBypassed, setIsBypassed] = useState(data.isBypassed);
+  const [codEnabled, setCodEnabled] = useState(data.codConfirmationEnabled);
 
   const handleValidateKey = useCallback(() => {
     setFeedback(null);
@@ -164,6 +180,43 @@ export default function Settings() {
                 )}
               </BlockStack>
             </Card>
+          </Layout.Section>
+
+          <Layout.Section>
+            <div className="animate-fade-in-up stagger-2">
+              <Card>
+                <BlockStack gap="400">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <Text as="h2" variant="headingMd">COD Order Confirmation</Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        When enabled, COD orders will receive a WhatsApp message asking customers to reply 1 to confirm or 2 to cancel. Unconfirmed orders are auto-cancelled after 24 hours.
+                      </Text>
+                    </BlockStack>
+                    <Button
+                      variant={codEnabled ? "primary" : "secondary"}
+                      tone={codEnabled ? "success" : undefined}
+                      onClick={() => {
+                        const newValue = !codEnabled;
+                        setCodEnabled(newValue);
+                        const formData = new FormData();
+                        formData.append("intent", "toggle_cod");
+                        formData.append("cod_enabled", String(newValue));
+                        submit(formData, { method: "POST" });
+                      }}
+                      loading={isSubmitting}
+                    >
+                      {codEnabled ? "Enabled" : "Disabled"}
+                    </Button>
+                  </InlineStack>
+                  {codEnabled && (
+                    <Banner tone="info">
+                      <p><strong>Flow:</strong> COD order placed → WhatsApp confirmation sent → Customer replies 1 (confirm) or 2 (cancel) → 12h reminder if no reply → Auto-cancel after 24h</p>
+                    </Banner>
+                  )}
+                </BlockStack>
+              </Card>
+            </div>
           </Layout.Section>
 
           <Layout.Section variant="oneThird">

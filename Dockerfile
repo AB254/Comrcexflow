@@ -62,6 +62,7 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /app/package.json /app/package-lock.json* ./
 COPY --from=builder --chown=appuser:appuser /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:appuser /app/build ./build
+COPY --from=builder --chown=appuser:appuser /app/public ./public
 COPY --from=builder --chown=appuser:appuser /app/prisma ./prisma
 COPY --from=builder --chown=appuser:appuser /app/app/queues ./app/queues
 COPY --from=builder --chown=appuser:appuser /app/app/services ./app/services
